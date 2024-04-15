@@ -21,7 +21,7 @@ export function Home() {
 				</div>
 			</div>
 			<div className="social_section">
-				<h1 className="title">Socials</h1>
+				{/* <h1 className="title">Socials</h1> */}
 				<div className="list">
 					<div className="social_card twitter">
 						<img src="twitterx.png" alt="X Logo" />
