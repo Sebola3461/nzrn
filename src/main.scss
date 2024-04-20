@@ -31,3 +31,9 @@ body {
 	overflow-x: hidden;
 	scroll-behavior: smooth;
 }
+
+img {
+	user-select: none;
+	-moz-drag-over: none;
+	-webkit-user-drag: none;
+}

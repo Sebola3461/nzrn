@@ -149,10 +149,18 @@ div.home_layout {
 				padding: 10px;
 				border-radius: 1rem;
 				background: var(--background9);
+				cursor: pointer;
+				transition: linear 120ms;
+				box-shadow: 0 0 10px 3px transparent;
+
+				&:hover {
+					box-shadow: 0 0 10px 3px #299ba521;
+					background-color: #364041;
+				}
 
 				img {
 					width: 50px;
-					margin-left: -30px;
+					// margin-left: -30px;
 					margin-right: 10px;
 				}
 

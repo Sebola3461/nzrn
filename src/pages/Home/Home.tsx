@@ -3,6 +3,10 @@ import "./Home.scss";
 // import { Navbar } from "../../components/Navbar/Navbar";
 
 export function Home() {
+	const handleLink = (link: string) => {
+		window.open(link);
+	};
+
 	return (
 		<div className="home_layout">
 			{/* <Navbar /> */}
@@ -23,19 +27,30 @@ export function Home() {
 			<div className="social_section">
 				{/* <h1 className="title">Socials</h1> */}
 				<div className="list">
-					<div className="social_card twitter">
+					<div
+						className="social_card twitter"
+						onClick={() => handleLink("https://twitter.com/sebola3461")}
+					>
 						<img src="twitterx.png" alt="X Logo" />
 						<a href="https://twitter.com/sebola3461" target="_blank">
 							@sebola3461
 						</a>
 					</div>
-					<div className="social_card github">
+					<div
+						className="social_card github"
+						onClick={() => handleLink("https://github.com/sebola3461")}
+					>
 						<img src="github-mark-white.png" alt="GitHub Logo" />
 						<a href="https://github.com/sebola3461" target="_blank">
 							@sebola3461
 						</a>
 					</div>
-					<div className="social_card discord">
+					<div
+						className="social_card discord"
+						onClick={() =>
+							handleLink("https://discord.com/users/556639598172962818")
+						}
+					>
 						<img src="discord.png" alt="Discord Logo" />
 						<a
 							href="https://discord.com/users/556639598172962818"
