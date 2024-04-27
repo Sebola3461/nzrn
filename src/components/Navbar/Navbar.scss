@@ -23,36 +23,31 @@ nav.navbar {
 	gap: 17px;
 
 	a {
-		--pseudo-opacity: 0;
-		--pseudo-border-x: -100%;
+		--underline-width: 0%;
+		--underline-color: #ffffff;
+
 		text-decoration: none;
-		font-weight: 600;
-		transition: linear 120ms;
+		font-weight: 700;
 		position: relative;
 		color: white;
-		-webkit-background-clip: text;
-		background-clip: text;
+		transition: cubic-bezier(0.39, 0.8, 0.76, 0.92) 200ms;
 
 		&:hover {
-			color: transparent;
-			--pseudo-opacity: 1;
+			--underline-width: 100%;
+			--underline-color: #299ba5;
+			color: var(--underline-color);
 		}
 
 		&::after {
-			content: attr(aria-label);
-			font-weight: inherit;
-			width: 100%;
+			content: "";
 			position: absolute;
-			top: 0;
 			left: 0;
-			color: transparent;
-			font-weight: 600;
-			-webkit-background-clip: text;
-			background-clip: text;
-			background-image: linear-gradient(120deg, #34feed 30%, #d341ff);
-			opacity: var(--pseudo-opacity);
-			pointer-events: none;
-			transition: linear 120ms;
+			bottom: 0;
+			height: 2px;
+			width: var(--underline-width);
+			background-color: var(--underline-color);
+			transition: cubic-bezier(0.39, 0.8, 0.76, 0.92) 200ms;
+			border-radius: 1000px;
 		}
 	}
 }

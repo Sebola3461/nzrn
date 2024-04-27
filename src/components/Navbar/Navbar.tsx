@@ -3,7 +3,7 @@ import "./Navbar.scss";
 export function Navbar() {
 	return (
 		<nav className="navbar">
-			<a href="" aria-label="Home">
+			<a href="#" aria-label="Home">
 				Home
 			</a>
 			<a href="#social" aria-label="Social">
