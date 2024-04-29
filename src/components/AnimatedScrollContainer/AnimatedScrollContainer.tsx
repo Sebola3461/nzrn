@@ -43,9 +43,9 @@ export function AnimatedScrollContainer({
 					(html?.getBoundingClientRect().bottom || 0);
 				const triggerPoint = elementTop - 10;
 
-				console.log(elementTop, triggerPoint, currentPosition);
-
-				const newState = currentPosition >= triggerPoint;
+				const newState =
+					currentPosition >= triggerPoint ||
+					(html?.scrollHeight || 99999999) <= window.innerHeight;
 
 				if (!isVisible && newState) {
 					setVisibility(newState);
