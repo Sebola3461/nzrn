@@ -1,0 +1,24 @@
+div.animated_scroll_container {
+	animation-duration: attr(data-animationduration);
+	animation-timing-function: cubic-bezier(0.39, 0.8, 0.76, 0.92);
+
+	@keyframes scrollAnimation {
+		0% {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	opacity: 0;
+	transform: translateY(-20px);
+
+	&[data-visible="true"] {
+		opacity: 1;
+		transform: translateY(0);
+		animation-name: scrollAnimation;
+	}
+}
