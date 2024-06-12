@@ -1,0 +1,24 @@
+* {
+	cursor: none !important;
+}
+
+div.mouse {
+	position: fixed;
+	width: 30px;
+	height: 30px;
+	background-image: url(cursor.png);
+	z-index: 9999999999999999999999999999;
+	pointer-events: none;
+	transform: scale(1);
+	transition: transform 500ms cubic-bezier(0.39, 0.8, 0.76, 0.92);
+
+	&[data-visible="false"] {
+		display: none;
+	}
+
+	&[data-holding="true"] {
+		transform: scale(0.8);
+
+		background-image: url(cursor-click.png);
+	}
+}

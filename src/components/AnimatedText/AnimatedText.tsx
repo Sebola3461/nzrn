@@ -45,8 +45,6 @@ export function AnimatedText({
 
 				if (text.length >= content.length && intervalId !== null)
 					clearInterval(intervalId);
-
-				console.log("new char", shouldAnimate);
 			};
 
 			intervalId = setInterval(() => handleNewCharacter(), speed || 20);
