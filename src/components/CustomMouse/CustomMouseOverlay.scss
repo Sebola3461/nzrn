@@ -6,7 +6,7 @@ div.mouse {
 	position: fixed;
 	width: 30px;
 	height: 30px;
-	background-image: url(cursor.png);
+	background-image: url(/cursor.png);
 	z-index: 9999999999999999999999999999;
 	pointer-events: none;
 	transform: scale(1);
@@ -19,6 +19,6 @@ div.mouse {
 	&[data-holding="true"] {
 		transform: scale(0.8);
 
-		background-image: url(cursor-click.png);
+		background-image: url(/cursor-click.png);
 	}
 }
