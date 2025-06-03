@@ -18,7 +18,9 @@ export function Home() {
 				0,
 		);
 
-		if (window.location.pathname == "/linkedin") {
+		const searchParams = new URLSearchParams(window.location.search);
+
+		if (searchParams.get("redirect") == "linkedin") {
 			return window.location.replace(
 				"https://www.linkedin.com/in/paulo-ricardo-alves-campos-wysi727/",
 			);
