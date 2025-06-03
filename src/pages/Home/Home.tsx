@@ -17,6 +17,12 @@ export function Home() {
 			document.querySelector("div.dev_section")?.getBoundingClientRect().top ||
 				0,
 		);
+
+		if (window.location.pathname == "/linkedin") {
+			return window.location.replace(
+				"https://www.linkedin.com/in/paulo-ricardo-alves-campos-wysi727/",
+			);
+		}
 	}, []);
 
 	const handleDevSectionAnimationProgress = () => {
