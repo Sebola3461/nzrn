@@ -47,7 +47,10 @@ export function AnimatedText({
 					clearInterval(intervalId);
 			};
 
-			intervalId = setInterval(() => handleNewCharacter(), speed || 20);
+			intervalId = setInterval(
+				() => handleNewCharacter(),
+				speed || 20,
+			) as unknown as number; // for some reason it returns Node.Timeout
 		} else {
 			setText("");
 		}
