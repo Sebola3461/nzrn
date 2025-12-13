@@ -1,75 +1,41 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
-import "./AnimatedScrollContainer.scss";
+import { motion } from "framer-motion";
 
-interface Props {
-	children?: ReactNode[] | ReactNode;
-	className?: string;
-	animationDuration?: `${string}${"ms" | "s"}`;
-	onAnimate?: () => void;
-}
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 export function AnimatedScrollContainer({
-	animationDuration,
 	children,
 	className,
-	onAnimate,
-}: Props) {
-	const [isVisible, setVisibility] = useState(false);
-	const container = useRef<HTMLDivElement>(null);
-
-	const classList = ["animated_scroll_container"];
-
-	// maybe move to helpers?
-	if (className && className.trim()) {
-		const sanitizedCustomClass = className
-			.split(" ")
-			.map((property) => property.trim())
-			.filter((property) => property.length > 0);
-
-		classList.push(...sanitizedCustomClass);
-	}
-
-	useEffect(() => {
-		const handleScroll = () => {
-			if (container.current) {
-				const elementTop = Math.abs(
-					container.current.getBoundingClientRect().top -
-						container.current.getBoundingClientRect().bottom,
-				); // A lot of calculations to get scroll position of the element relative to <html> scrollTop
-
-				const html = document.querySelector("html");
-				const currentPosition =
-					(html?.getBoundingClientRect().height || 0) -
-					(html?.getBoundingClientRect().bottom || 0);
-				const triggerPoint = elementTop - 10;
-
-				const newState =
-					currentPosition >= triggerPoint ||
-					(html?.scrollHeight || 99999999) <= window.innerHeight;
-
-				if (!isVisible && newState) {
-					setVisibility(newState);
-
-					if (onAnimate) onAnimate();
-				}
-			}
-		};
-
-		handleScroll();
-
-		window.onscroll = handleScroll;
-	}, []);
-
+}: {
+	children: React.ReactNode;
+	className?: string;
+}) {
 	return (
-		<div
-			className={classList.join(" ")}
-			ref={container}
-			data-visible={isVisible}
-			style={{
-				animationDuration: animationDuration,
+		<motion.div
+			className={className}
+			initial="hidden"
+			whileInView="visible"
+			viewport={{ once: true, amount: 0.8 }}
+			variants={{
+				hidden: {
+					opacity: 0,
+					y: 20,
+					scale: 1,
+					filter: "blur(6px)",
+				},
+				visible: {
+					opacity: 1,
+					y: 0,
+					scale: 1,
+					filter: "blur(0px)",
+					transition: {
+						duration: 0.9,
+						ease: EASE_OUT_EXPO,
+						when: "beforeChildren",
+					},
+				},
 			}}
 		>
 			{children}
-		</div>
+		</motion.div>
 	);
 }

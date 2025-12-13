@@ -1,0 +1,6 @@
+span.animated_text {
+	&.transparent {
+		box-shadow: 0 0 transparent;
+		color: transparent;
+	}
+}

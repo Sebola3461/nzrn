@@ -1,60 +1,48 @@
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import "./AnimatedText.scss";
 
 interface Props {
 	className?: string;
 	content: string;
 	speed?: number;
-	shouldAnimate?: boolean;
 }
 
-export function AnimatedText({
-	className,
-	content,
-	speed,
-	shouldAnimate,
-}: Props) {
-	const [text, setText] = useState("");
-
+export function AnimatedText({ className, content, speed = 30 }: Props) {
 	const classList = ["animated_text"];
 
-	// maybe move to helpers?
-	if (className && className.trim()) {
-		const sanitizedCustomClass = className
-			.split(" ")
-			.map((property) => property.trim())
-			.filter((property) => property.length > 0);
-
-		classList.push(...sanitizedCustomClass);
+	if (className?.trim()) {
+		classList.push(
+			...className
+				.split(" ")
+				.map((c) => c.trim())
+				.filter(Boolean),
+		);
 	}
 
-	useEffect(() => {
-		if (shouldAnimate == true) {
-			let characterIndex = -1;
-			let intervalId: number | null = null;
-			let textTemp = "";
-
-			const handleNewCharacter = () => {
-				characterIndex++;
-				const characterToAppend = content[characterIndex];
-
-				if (characterToAppend) {
-					textTemp = textTemp.concat(characterToAppend);
-
-					setText(textTemp);
-				}
-
-				if (text.length >= content.length && intervalId !== null)
-					clearInterval(intervalId);
-			};
-
-			intervalId = setInterval(
-				() => handleNewCharacter(),
-				speed || 20,
-			) as unknown as number; // for some reason it returns Node.Timeout
-		} else {
-			setText("");
-		}
-	}, [shouldAnimate]);
-
-	return <span className={classList.join(" ")}>{text}</span>;
+	return (
+		<motion.span
+			className={classList.join(" ")}
+			variants={{
+				hidden: {},
+				visible: {
+					transition: {
+						staggerChildren: speed / 1000,
+					},
+				},
+			}}
+			style={{ display: "inline-block", whiteSpace: "pre-wrap" }}
+		>
+			{content.split("").map((char, i) => (
+				<motion.span
+					key={i}
+					variants={{
+						hidden: { opacity: 0 },
+						visible: { opacity: 1 },
+					}}
+				>
+					{char}
+				</motion.span>
+			))}
+		</motion.span>
+	);
 }

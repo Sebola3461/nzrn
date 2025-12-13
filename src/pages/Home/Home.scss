@@ -182,6 +182,20 @@ div.home_layout {
 		align-items: flex-start;
 		gap: 10px;
 
+		&.reverse {
+			div.horizontal_split {
+				flex-direction: row-reverse !important;
+			}
+
+			h1.title {
+				margin-left: auto;
+			}
+
+			div.text {
+				text-align: end;
+			}
+		}
+
 		h1.title {
 			color: rgb(253 150 231);
 			text-shadow: 0 0 54px rgb(233 132 212 / 73%);

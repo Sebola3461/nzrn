@@ -1,23 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AnimatedText } from "../../components/AnimatedText/AnimatedText";
 import { SocialCard } from "../../components/SocialCard/SocialCard";
 import "./Home.scss";
-import { AnimatedScrollContainer } from "../../components/AnimatedScrollContainer/AnimatedScrollContainer";
 import { getAge } from "../../helpers/getAge";
 import { CustomMouseOverlay } from "../../components/CustomMouse/CustomMouseOverlay";
-
-// import { Navbar } from "../../components/Navbar/Navbar";
+import { AnimatedScrollContainer } from "../../components/AnimatedScrollContainer/AnimatedScrollContainer";
 
 export function Home() {
-	const [aboutSectionTitleOffset, setAboutSectionTitleOffset] = useState(0);
-	const [shouldAnimateDevTitle, setShouldAnimateDevTitle] = useState(false);
-
 	useEffect(() => {
-		setAboutSectionTitleOffset(
-			document.querySelector("div.dev_section")?.getBoundingClientRect().top ||
-				0,
-		);
-
 		const searchParams = new URLSearchParams(window.location.search);
 
 		if (searchParams.get("redirect") == "linkedin") {
@@ -27,12 +17,10 @@ export function Home() {
 		}
 	}, []);
 
-	const handleDevSectionAnimationProgress = () => {
-		setShouldAnimateDevTitle(true);
-	};
-
 	return (
 		<>
+			{/* <GettingStarted />
+			<LoopingAudio src="nzrn.wav" /> */}
 			<CustomMouseOverlay />
 			<div className="home_layout">
 				{/* <Navbar /> */}
@@ -80,18 +68,9 @@ export function Home() {
 					<span>More about me</span>
 					<div className="bar" />
 				</div>
-				<AnimatedScrollContainer
-					animationDuration="1000ms"
-					className="about_section"
-					onAnimate={() => handleDevSectionAnimationProgress()}
-					data-scrollPosition={`${aboutSectionTitleOffset}px`}
-				>
+				<AnimatedScrollContainer className="about_section">
 					<h1 className="title" id="programming">
-						<AnimatedText
-							content="Lemme talk about me..."
-							shouldAnimate={shouldAnimateDevTitle}
-							speed={80}
-						/>
+						<AnimatedText content="Lemme talk about me..." />
 					</h1>
 					<div className="horizontal_split">
 						<div className="text">
@@ -107,6 +86,28 @@ export function Home() {
 						</div>
 
 						<img src="mikuya.png" width="30%" className="miku" />
+					</div>
+				</AnimatedScrollContainer>
+				<AnimatedScrollContainer className="about_section reverse">
+					<h1 className="title" id="gaming">
+						<AnimatedText content="What do i like to play?" />
+					</h1>
+					<div className="horizontal_split">
+						<div className="text">
+							I really love rhythm games! They are so fun! I really don't mind
+							if it's a VSRG, Drum, Dance, or anything. My favorit one is <br />{" "}
+							<a href="https://wikipedia.org/wiki/Beatmania" target="_blank">
+								Beatmania
+								<span className="background" />
+							</a>
+						</div>
+
+						<img
+							src="beatmania.jpg"
+							width="auto"
+							height="140px"
+							className="miku"
+						/>
 					</div>
 				</AnimatedScrollContainer>
 			</div>

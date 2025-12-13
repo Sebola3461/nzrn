@@ -9,7 +9,7 @@ div.social_card {
 	min-width: fit-content;
 	height: 60px;
 	padding: 10px;
-	border-radius: 1rem;
+	border-radius: 0.5rem;
 	background: var(--background9);
 	cursor: pointer;
 	box-shadow: 0 0 10px 3px transparent;
@@ -27,7 +27,7 @@ div.social_card {
 		background: var(--glow);
 		left: 0;
 		right: 0;
-		border-radius: 1rem;
+		border-radius: 0.5rem;
 		transition: ease-in-out 240ms;
 		z-index: 1;
 	}
