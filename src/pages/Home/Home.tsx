@@ -5,6 +5,7 @@ import "./Home.scss";
 import { getAge } from "../../helpers/getAge";
 import { CustomMouseOverlay } from "../../components/CustomMouse/CustomMouseOverlay";
 import { AnimatedScrollContainer } from "../../components/AnimatedScrollContainer/AnimatedScrollContainer";
+import { Game } from "../../game/Mania";
 
 export function Home() {
 	useEffect(() => {
@@ -22,6 +23,8 @@ export function Home() {
 			{/* <GettingStarted />
 			<LoopingAudio src="nzrn.wav" /> */}
 			<CustomMouseOverlay />
+			{/* <GameView /> */}
+
 			<div className="home_layout">
 				{/* <Navbar /> */}
 				<div className="header_section">
@@ -110,7 +113,29 @@ export function Home() {
 						/>
 					</div>
 				</AnimatedScrollContainer>
+				<AnimatedScrollContainer className="about_section">
+					<h1 className="title" id="programming">
+						<AnimatedText content="I'm a Web Developer too!" />
+					</h1>
+					<div className="horizontal_split">
+						<div className="text">
+							I love programming, it's one of my favorite hobbies! I'm
+							considered a full-stack developer, but I work in both areas. If
+							you want to know my level of expertise, check out below a
+							Beatmania clone I made using Pixi.js and lots of calculations!
+						</div>
+
+						<img src="mikuya.png" width="30%" className="miku" />
+					</div>
+				</AnimatedScrollContainer>
+				<div className="see_more">
+					<div className="bar" />
+					<span>Check out the game below!</span>
+					<div className="bar" />
+				</div>
 			</div>
+
+			<Game />
 		</>
 	);
 }

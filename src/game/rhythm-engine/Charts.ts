@@ -1,0 +1,34 @@
+export const Charts = [
+	{
+		id: "static",
+		title: "Static",
+		artist: "FLAVOR FOLEY",
+		duration: "4:01",
+		notes: 575,
+		longs: 208,
+	},
+	{
+		id: "machinelove",
+		title: "Machine Love",
+		artist: "Jamie Paige",
+		duration: "3:35",
+		notes: 455,
+		longs: 93,
+	},
+	{
+		id: "sasakure",
+		title: "Puppet Theater of Twee-Box feat. Hatsune Miku",
+		artist: "sasakure.UK",
+		duration: "3:48",
+		notes: 2614,
+		longs: 49,
+	},
+	{
+		id: "oneup",
+		title: "You Make My Life 1UP",
+		artist: "Camellia feat. Nanahira",
+		duration: "1:54",
+		notes: 883,
+		longs: 167,
+	},
+];

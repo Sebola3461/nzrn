@@ -13,6 +13,7 @@
     "@types/express": "^5.0.2",
     "express": "^5.1.0",
     "motion": "^12.23.26",
+    "pixi.js": "^8.14.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sass": "^1.75.0"
