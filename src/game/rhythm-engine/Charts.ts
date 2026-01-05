@@ -31,4 +31,12 @@ export const Charts = [
 		notes: 883,
 		longs: 167,
 	},
+	{
+		id: "solzinho",
+		title: "Shakunetsu Pt.2 Long Train Running",
+		artist: "DJ Mass MAD Izm*",
+		duration: "2:00",
+		notes: 1106,
+		longs: 207,
+	},
 ];
