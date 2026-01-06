@@ -8,34 +8,138 @@ export class VisualManager {
 	private effectContainer = new PIXI.Container();
 	private receptors: PIXI.Graphics[] = [];
 	private sprites = new Map<HitObject, PIXI.Graphics>();
-	private activeAnimations: { text: PIXI.Text }[] = [];
+	private activeAnimations: {
+		text: PIXI.Text;
+		targetScale: number;
+		life: number;
+	}[] = [];
 	private scrollSpeed: number = 0.8;
 	private columnWidth: number = 0;
 	private judgementGlow = new PIXI.Graphics();
 	private hitLine = new PIXI.Graphics();
+	private activeLightnings: Map<number, PIXI.Graphics> = new Map();
+	private urContainer = new PIXI.Container();
+	private urTicks: { graphics: PIXI.Graphics; time: number }[] = [];
+	private readonly UR_WIDTH = 300;
+	private readonly UR_MAX_MS = 150;
+
+	// fps counter
+	private fpsText = new PIXI.Text();
 
 	constructor(private stage: PIXI.Container, private app: PIXI.Application) {
-		this.stage.addChild(this.effectContainer, this.noteContainer);
+		this.stage.addChild(this.noteContainer, this.effectContainer);
 		this.createReceptors();
 		this.stage.addChild(this.judgementGlow);
 		this.stage.addChild(this.hitLine);
 		this.updateLayout();
+
+		this.stage.addChild(this.urContainer);
+		this.setupURBar();
+		this.setupFPSCounter();
+	}
+
+	private setupURBar() {
+		this.urContainer.removeChildren();
+
+		const { width, height } = this.app.screen;
+		const centerX = width / 2;
+		const bottomY = height - 50;
+
+		const bg = new PIXI.Graphics();
+
+		// Função auxiliar para converter MS em largura de pixels na barra
+		const msToPx = (ms: number) => (ms / this.UR_MAX_MS) * (this.UR_WIDTH / 2);
+
+		// 1. Zona de GOOD (Azul - a maior área externa)
+		const goodWidth = msToPx(CONSTANTS.JUDGEMENT_WINDOWS.GOOD) * 2;
+		bg.rect(-goodWidth / 2, 0, goodWidth, 4).fill({
+			color: 0x0099ff,
+			alpha: 0.3,
+		});
+
+		// 2. Zona de GREAT (Verde - intermediária)
+		const greatWidth = msToPx(CONSTANTS.JUDGEMENT_WINDOWS.GREAT) * 2;
+		bg.rect(-greatWidth / 2, 0, greatWidth, 4).fill({
+			color: 0x00ff00,
+			alpha: 0.4,
+		});
+
+		// 3. Zona de PERFECT (Amarela/Branca - central)
+		const perfectWidth = msToPx(CONSTANTS.JUDGEMENT_WINDOWS.PERFECT) * 2;
+		bg.rect(-perfectWidth / 2, 0, perfectWidth, 4).fill({
+			color: 0xffff00,
+			alpha: 0.6,
+		});
+
+		// Linha central de 0ms (Sempre branca e acima de tudo)
+		const centerLine = new PIXI.Graphics().rect(-1, -5, 2, 14).fill(0xffffff);
+
+		this.urContainer.addChild(bg, centerLine);
+		this.urContainer.x = centerX;
+		this.urContainer.y = bottomY;
+	}
+
+	public addURTick(errorMs: number, color: number) {
+		// Calcula a posição X baseada no erro (ms)
+		// Mapeia -150ms...150ms para -150px...150px
+		const xPos = (errorMs / this.UR_MAX_MS) * (this.UR_WIDTH / 2);
+
+		// Limita para não sair da barra
+		const clampedX = Math.max(
+			-this.UR_WIDTH / 2,
+			Math.min(this.UR_WIDTH / 2, xPos),
+		);
+
+		const tick = new PIXI.Graphics()
+			.rect(1, -10, 2, 20)
+			.fill({ color: color, alpha: 0.8 });
+
+		tick.x = clampedX;
+		this.urContainer.addChild(tick);
+		this.urTicks.push({ graphics: tick, time: Date.now() });
+	}
+
+	private animateUR() {
+		const now = Date.now();
+		for (let i = this.urTicks.length - 1; i >= 0; i--) {
+			const tick = this.urTicks[i];
+			const elapsed = now - tick.time;
+
+			if (elapsed > 1000) {
+				// Ticks somem após 1 segundos
+				tick.graphics.destroy();
+				this.urTicks.splice(i, 1);
+			} else if (elapsed > 2000) {
+				tick.graphics.alpha = 1 - (elapsed - 2000) / 1000;
+			}
+		}
 	}
 
 	private drawHitLine() {
 		const { width, height } = this.app.screen;
-		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 8;
+		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 15;
 
 		this.hitLine.clear();
 
 		// Linha de base escura (estética)
-		this.hitLine.rect(0, hitY, width, 2).fill({ color: 0x333344, alpha: 0.5 });
+		this.hitLine.rect(0, hitY, width, 2).fill({ color: 0xffffff, alpha: 0.8 });
+	}
+
+	public updateFPS() {
+		const fps = Math.round(this.app.ticker.FPS);
+		this.fpsText.text = `FPS: ${fps}`;
+
+		if (fps < 55) {
+			this.fpsText.style.fill = "#ff4747"; // Vermelho se houver queda
+		} else {
+			this.fpsText.style.fill = "#00ffff"; // Ciano se estiver estável
+		}
 	}
 
 	// Um brilhozinho que fica em cima da judgement line
 	private drawJudgementGlow() {
 		const { width, height } = this.app.screen;
-		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 8;
+		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 15;
 		const gradientHeight = 240;
 
 		this.judgementGlow.clear();
@@ -48,7 +152,7 @@ export class VisualManager {
 			],
 		});
 
-		// Linha de base escura (estética)
+		// Linha de base escura
 		this.judgementGlow
 			.rect(0, hitY - gradientHeight, width, gradientHeight)
 			.fill(gradientTexture);
@@ -64,7 +168,7 @@ export class VisualManager {
 
 		this.receptors.forEach((r, i) => {
 			this.drawReceptor(r, i, false);
-			r.y = hitY + 20; // Centraliza a altura do receptor
+			r.y = hitY + 40; // Centraliza a altura do receptor
 		});
 	}
 
@@ -116,9 +220,8 @@ export class VisualManager {
 		const playerPos = ve.getPositionAtTime(currentTime);
 		const padding = this.columnWidth * 0.1;
 
-		// Suas cores específicas
-		const COLOR_TAP = 0x299ba5; // Azul
-		const COLOR_LN = 0xfd96e7; // Rosa
+		// azul rosa rosa azul
+		const colors = [0x299ba5, 0xfd96e7, 0xfd96e7, 0x299ba5];
 
 		notes.forEach((note) => {
 			if (note.hit) {
@@ -145,7 +248,7 @@ export class VisualManager {
 				const w = this.columnWidth - padding * 2;
 
 				if (note.type === "TAP") {
-					g.rect(0, -15, w, 30).fill(COLOR_TAP);
+					g.rect(0, -15, w, 30).fill(colors[note.column]);
 					g.y = yPos;
 				} else {
 					const headY = note.holding ? hitY : yPos;
@@ -153,13 +256,13 @@ export class VisualManager {
 
 					// Corpo da LN com alpha para transparência neon
 					g.rect(w * 0.1, 0, w * 0.8, bodyH).fill({
-						color: COLOR_LN,
+						color: colors[note.column],
 						alpha: 0.4,
 					});
 
 					// Extremidades sólidas
-					g.rect(0, -15, w, 30).fill(COLOR_LN);
-					g.rect(0, bodyH - 15, w, 30).fill(COLOR_LN);
+					g.rect(0, -15, w, 30).fill(colors[note.column]);
+					g.rect(0, bodyH - 15, w, 30).fill(colors[note.column]);
 					g.y = yEnd;
 				}
 				g.x = note.column * this.columnWidth + padding;
@@ -169,65 +272,130 @@ export class VisualManager {
 		});
 
 		this.animateText();
+		this.animateUR();
+		this.updateFPS();
 	}
 
 	private animateText() {
 		for (let i = this.activeAnimations.length - 1; i >= 0; i--) {
-			const anim = this.activeAnimations[i];
-			anim.text.y -= 0.5;
-			anim.text.alpha -= 0.02;
-			if (anim.text.alpha <= 0) {
-				anim.text.destroy();
+			const anim = this.activeAnimations[i] as any;
+			const txt = anim.text;
+
+			// 1. Interpolação da Escala
+			// O texto "esmaga" até o tamanho alvo
+			txt.scale.x += (1 - txt.scale.x) * 0.2;
+			txt.scale.y += (1 - txt.scale.y) * 0.2;
+
+			// 2. Movimento e Alpha
+			txt.alpha -= 0.025;
+
+			// 3. Destruição
+			if (txt.alpha <= 0) {
+				txt.destroy();
 				this.activeAnimations.splice(i, 1);
 			}
 		}
 	}
 
-	public showJudgement(txt: string, color: number) {
+	private setupFPSCounter() {
+		this.fpsText.style = {
+			fill: "#00ffff",
+			fontSize: 16,
+			fontFamily: "monospace",
+			fontWeight: "bold",
+		};
+
+		this.fpsText.x = 10;
+		this.fpsText.y = 10;
+
+		this.stage.addChild(this.fpsText);
+	}
+
+	public showJudgement(txt: string, color: number, yOffset?: number) {
+		// 1. Criar o texto com um estilo muito mais agressivo
 		const j = new PIXI.Text({
 			text: txt,
-			style: { fill: color, fontSize: 40, fontWeight: "900" },
+			style: {
+				fill: color,
+				fontSize: 30,
+				fontWeight: "900",
+				fontFamily: "Arial Black",
+				stroke: { color: 0x000000, width: 6 },
+				dropShadow: {
+					alpha: 0.5,
+					angle: Math.PI / 6,
+					blur: 4,
+					color: color,
+					distance: 0,
+				},
+			},
 		});
+
 		j.anchor.set(0.5);
 		j.x = this.app.screen.width / 2;
-		j.y = this.app.screen.height * 0.5;
+		j.y = this.app.screen.height * 0.45 + (yOffset || 0); // Um pouco acima do centro
+
+		// 2. Efeito de Escala (Pop-in)
+		// Começa grande e diminui rapidamente para o tamanho normal
+		j.scale.set(1.5);
+
 		this.effectContainer.addChild(j);
-		this.activeAnimations.push({ text: j });
+
+		this.activeAnimations.push({
+			text: j,
+			targetScale: 1.0,
+			life: 1.0, // Tempo de vida de 0 a 1
+		});
 	}
 
 	public showLightning(col: number) {
+		// Se já houver um efeito nessa coluna, não cria outro
+		if (this.activeLightnings.has(col)) return;
+
 		const { height } = this.app.screen;
 		const hitY = height * CONSTANTS.HIT_POSITION_RATIO;
+		const colors = ["#299ba5", "#fd96e7", "#fd96e7", "#299ba5"];
 
 		const gradientTexture = new PIXI.FillGradient({
 			type: "linear",
 			colorStops: [
-				{ offset: 0, color: "#ffffff00" },
-				{ offset: 1, color: "#ffffff22" },
+				{ offset: 0, color: `${colors[col]}00` },
+				{ offset: 1, color: `${colors[col]}22` },
 			],
 		});
 
 		const l = new PIXI.Graphics()
-			.rect(col * this.columnWidth, 8, this.columnWidth, hitY)
+			.rect(col * this.columnWidth, 15, this.columnWidth, hitY)
 			.fill(gradientTexture);
+
 		this.effectContainer.addChild(l);
 
-		setTimeout(() => {
+		// Armazena a referência usando a coluna como chave
+		this.activeLightnings.set(col, l);
+	}
+
+	public stopLightning(col: number) {
+		const l = this.activeLightnings.get(col);
+		if (l) {
 			if (!l.destroyed) l.destroy();
-		}, 80);
+			this.activeLightnings.delete(col);
+		}
 	}
 
 	public setReceptorState(c: number, a: boolean) {
 		if (this.receptors[c]) this.drawReceptor(this.receptors[c], c, a);
 	}
+
 	public setScrollSpeed(s: number) {
 		this.scrollSpeed = s;
 	}
+
 	public clearAll() {
 		this.sprites.forEach((s) => s.destroy());
 		this.sprites.clear();
 		this.noteContainer.removeChildren();
 	}
+
 	private removeSprite(n: HitObject) {
 		const s = this.sprites.get(n);
 		if (s) {

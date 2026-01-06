@@ -3,6 +3,7 @@ import * as PIXI from "pixi.js";
 import { GameEngine } from "./rhythm-engine/GameEngine";
 import "./Mania.scss";
 import { Charts } from "./rhythm-engine/Charts";
+import { INITIAL_KEYS } from "./rhythm-engine/Constants";
 
 const defaultScoreData = {
 	score: 0,
@@ -18,6 +19,13 @@ const defaultScoreData = {
 	},
 };
 
+if (
+	!localStorage.getItem("keybinds") ||
+	localStorage.getItem("keybinds")?.split(",").length != 4
+) {
+	localStorage.keybinds = "d,f,j,k";
+}
+
 export const Game: React.FC = () => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const engineRef = useRef<GameEngine | null>(null);
@@ -25,12 +33,17 @@ export const Game: React.FC = () => {
 	const [selectedMap, setSelectedMap] = useState(-1);
 	const [isGameRunning, setIsGameRunning] = useState(false);
 	const [isPaused, setPaused] = useState(false);
+	const [currentChangingBinds, setCurrentChangingBinds] = useState(-1);
 
 	// Suas medidas exatas
 	const GAME_WIDTH = 280 * 1.2; // 336px
 	const GAME_HEIGHT = window.innerHeight * 0.9; // 840px
 
 	const startGame = (mapa: (typeof Charts)[0]) => {
+		if (engineRef.current) {
+			engineRef.current.destroy();
+		}
+
 		fetch(`/beatmap_assets/${mapa.id}/map.txt`)
 			.then((r) => r.text())
 			.then((mapaData) => {
@@ -50,7 +63,8 @@ export const Game: React.FC = () => {
 					const engine = new GameEngine(app);
 					await engine.init(mapaData, `/beatmap_assets/${mapa.id}/audio.mp3`);
 
-					app.ticker.maxFPS = 240;
+					app.ticker.minFPS = 999;
+					app.ticker.maxFPS = 999;
 
 					engineRef.current = engine;
 
@@ -79,7 +93,7 @@ export const Game: React.FC = () => {
 						setPaused(false);
 					});
 
-					engine.events.on("init", () => {
+					engine.events.on("started", () => {
 						setIsGameRunning(true);
 						setPaused(false);
 					});
@@ -87,6 +101,26 @@ export const Game: React.FC = () => {
 
 				init();
 			});
+	};
+
+	const requestChangeKey = (column: number) => {
+		setCurrentChangingBinds(column);
+		const keydownHandle = (ev: KeyboardEvent) => {
+			const currentSettings =
+				localStorage.getItem("keybinds")?.split(",") || INITIAL_KEYS;
+
+			currentSettings[column] = ev.key;
+
+			localStorage.keybinds = currentSettings.join(",");
+
+			setCurrentChangingBinds(-1);
+
+			engineRef.current?.setupKeys(currentSettings);
+
+			window.removeEventListener("keydown", keydownHandle);
+		};
+
+		window.addEventListener("keydown", keydownHandle);
 	};
 
 	if (selectedMap < 0)
@@ -117,6 +151,9 @@ export const Game: React.FC = () => {
 				</div>
 			</div>
 		);
+
+	const currentSettings =
+		localStorage.getItem("keybinds")?.split(",") || INITIAL_KEYS;
 
 	return (
 		<div className="beatmania_game">
@@ -162,6 +199,15 @@ export const Game: React.FC = () => {
 					>
 						<span className="text">Restart</span>
 					</button>
+					<button
+						onClick={() => {
+							engineRef.current?.destroy();
+							setSelectedMap(-1);
+						}}
+						className="pause_overlay_button"
+					>
+						<span className="text">Quit</span>
+					</button>
 				</div>
 			</div>
 			<div className="column left">
@@ -185,6 +231,35 @@ export const Game: React.FC = () => {
 					<span className="text">
 						Combo: {scoreData.combo}x / Max Combo: {scoreData.maxCombo}x
 					</span>
+				</div>
+				<div className="song_details container">
+					<span className="text">
+						Volume:{" "}
+						<input
+							type="range"
+							min={0}
+							max={1}
+							step={0.01}
+							defaultValue={0.01}
+							onChange={(e) =>
+								engineRef.current?.clock.setVolume(Number(e.target.value))
+							}
+						/>{" "}
+						/ SV: {engineRef.current?.getSv().toFixed(2) || "-"}x / Offset:{" "}
+						{engineRef.current?.getOffset() || "-"}
+					</span>
+				</div>
+				<div className="song_details container row">
+					{currentSettings.map((key, i) => (
+						<div
+							className="song_details container"
+							data-selected={currentChangingBinds == i}
+							onClick={() => requestChangeKey(i)}
+							key={i}
+						>
+							<span className="text big">{key}</span>
+						</div>
+					))}
 				</div>
 			</div>
 		</div>

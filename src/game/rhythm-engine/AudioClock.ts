@@ -7,15 +7,19 @@ export class AudioClock {
 	private startTime: number = 0;
 	private pauseTime: number = 0;
 	private isPlaying: boolean = false;
-	private currentVolume: number = 0.6;
+	private currentVolume: number = 0.01;
 
 	public offset: number = 0;
 
 	constructor() {
-		this.context = new AudioContext();
-		// Inicializa o GainNode e o conecta à saída principal (alto-falantes)
+		this.context = new AudioContext({ latencyHint: "interactive" });
 		this.gainNode = this.context.createGain();
 		this.gainNode.connect(this.context.destination);
+		this.gainNode.gain.setTargetAtTime(
+			this.currentVolume,
+			this.context.currentTime,
+			0.01,
+		);
 	}
 
 	async load(url: string) {
