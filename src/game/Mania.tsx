@@ -115,7 +115,7 @@ export const Game: React.FC = () => {
 
 			setCurrentChangingBinds(-1);
 
-			engineRef.current?.setupKeys(currentSettings);
+			engineRef.current?.inputManager.setupKeys(currentSettings);
 
 			window.removeEventListener("keydown", keydownHandle);
 		};
@@ -245,8 +245,8 @@ export const Game: React.FC = () => {
 								engineRef.current?.clock.setVolume(Number(e.target.value))
 							}
 						/>{" "}
-						/ SV: {engineRef.current?.getSv().toFixed(2) || "-"}x / Offset:{" "}
-						{engineRef.current?.getOffset() || "-"}
+						/ SV: {engineRef.current?.getScrollSpeed().toFixed(2) || "-"}x /
+						Offset: {engineRef.current?.getOffset() || "-"}
 					</span>
 				</div>
 				<div className="song_details container row">
