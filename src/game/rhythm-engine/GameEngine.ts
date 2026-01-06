@@ -239,13 +239,18 @@ export class GameEngine {
 		if (this.state !== "PLAYING") return;
 
 		const time = this.getAdjustedTime();
-		// Lógica de soltar Long Note
+
 		const note = this.notes.find((n) => n.holding && n.column === col);
+
 		if (note) {
-			note.hit = true;
 			note.holding = false;
-			const errorMs = time - note.endTime;
-			this.applyJudgement(this.calcJudge(Math.abs(errorMs)), errorMs, col);
+			note.hit = true;
+
+			const releaseError = time - note.endTime;
+			const absError = Math.abs(releaseError);
+
+			const releaseJudge = this.calcJudge(absError);
+			this.applyJudgement(releaseJudge, releaseError, col);
 		}
 	};
 
