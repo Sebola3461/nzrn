@@ -11,23 +11,47 @@ export class VisualManager {
 	private activeAnimations: { text: PIXI.Text }[] = [];
 	private scrollSpeed: number = 0.8;
 	private columnWidth: number = 0;
+	private judgementGlow = new PIXI.Graphics();
 	private hitLine = new PIXI.Graphics();
 
 	constructor(private stage: PIXI.Container, private app: PIXI.Application) {
-		this.stage.addChild(this.noteContainer, this.effectContainer);
+		this.stage.addChild(this.effectContainer, this.noteContainer);
 		this.createReceptors();
+		this.stage.addChild(this.judgementGlow);
 		this.stage.addChild(this.hitLine);
 		this.updateLayout();
 	}
 
 	private drawHitLine() {
 		const { width, height } = this.app.screen;
-		const hitY = height * CONSTANTS.HIT_POSITION_RATIO;
+		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 8;
 
 		this.hitLine.clear();
 
 		// Linha de base escura (estética)
 		this.hitLine.rect(0, hitY, width, 2).fill({ color: 0x333344, alpha: 0.5 });
+	}
+
+	// Um brilhozinho que fica em cima da judgement line
+	private drawJudgementGlow() {
+		const { width, height } = this.app.screen;
+		const hitY = height * CONSTANTS.HIT_POSITION_RATIO + 8;
+		const gradientHeight = 240;
+
+		this.judgementGlow.clear();
+
+		const gradientTexture = new PIXI.FillGradient({
+			type: "linear",
+			colorStops: [
+				{ offset: 0.5, color: "#ffffff00" },
+				{ offset: 1, color: "#ffffff10" },
+			],
+		});
+
+		// Linha de base escura (estética)
+		this.judgementGlow
+			.rect(0, hitY - gradientHeight, width, gradientHeight)
+			.fill(gradientTexture);
 	}
 
 	public updateLayout() {
@@ -36,6 +60,7 @@ export class VisualManager {
 		this.columnWidth = width / CONSTANTS.TOTAL_COLUMNS;
 
 		this.drawHitLine();
+		this.drawJudgementGlow();
 
 		this.receptors.forEach((r, i) => {
 			this.drawReceptor(r, i, false);
@@ -133,8 +158,8 @@ export class VisualManager {
 					});
 
 					// Extremidades sólidas
-					g.rect(0, -10, w, 20).fill(COLOR_LN);
-					g.rect(0, bodyH - 10, w, 20).fill(COLOR_LN);
+					g.rect(0, -15, w, 30).fill(COLOR_LN);
+					g.rect(0, bodyH - 15, w, 30).fill(COLOR_LN);
 					g.y = yEnd;
 				}
 				g.x = note.column * this.columnWidth + padding;
@@ -158,7 +183,7 @@ export class VisualManager {
 		}
 	}
 
-	public showJudgement(txt: string, color: number) {
+	public showJudgement(txt: string, color: number, column?: number) {
 		const j = new PIXI.Text({
 			text: txt,
 			style: { fill: color, fontSize: 40, fontWeight: "900" },
@@ -171,10 +196,22 @@ export class VisualManager {
 	}
 
 	public showLightning(col: number) {
+		const { height } = this.app.screen;
+		const hitY = height * CONSTANTS.HIT_POSITION_RATIO;
+
+		const gradientTexture = new PIXI.FillGradient({
+			type: "linear",
+			colorStops: [
+				{ offset: 0, color: "#ffffff00" },
+				{ offset: 1, color: "#ffffff22" },
+			],
+		});
+
 		const l = new PIXI.Graphics()
-			.rect(col * this.columnWidth, 0, this.columnWidth, this.app.screen.height)
-			.fill({ color: 0xc3c3c3, alpha: 0.1 });
+			.rect(col * this.columnWidth, 8, this.columnWidth, hitY)
+			.fill(gradientTexture);
 		this.effectContainer.addChild(l);
+
 		setTimeout(() => {
 			if (!l.destroyed) l.destroy();
 		}, 80);

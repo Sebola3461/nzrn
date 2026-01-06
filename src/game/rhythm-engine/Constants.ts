@@ -1,7 +1,7 @@
 export const CONSTANTS = {
 	COLUMN_WIDTH: 70,
 	// 0.8 = 80% da altura da tela de cima para baixo
-	HIT_POSITION_RATIO: 0.85,
+	HIT_POSITION_RATIO: 0.75,
 	TOTAL_COLUMNS: 4,
 
 	NOTE_SPEED: 0.6,
