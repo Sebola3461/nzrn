@@ -183,7 +183,7 @@ export class VisualManager {
 		}
 	}
 
-	public showJudgement(txt: string, color: number, column?: number) {
+	public showJudgement(txt: string, color: number) {
 		const j = new PIXI.Text({
 			text: txt,
 			style: { fill: color, fontSize: 40, fontWeight: "900" },

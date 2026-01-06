@@ -178,7 +178,7 @@ export class GameEngine {
 				note.holding = true;
 				note.wasInteracted = true;
 			}
-			this.applyJudgement(judge, note.column);
+			this.applyJudgement(judge);
 		}
 	};
 
@@ -192,7 +192,6 @@ export class GameEngine {
 			note.holding = false;
 			this.applyJudgement(
 				this.calcJudge(Math.abs(note.endTime - this.clock.getTime())),
-				note.column,
 			);
 		}
 	};
@@ -204,14 +203,14 @@ export class GameEngine {
 		return "MISS";
 	}
 
-	private applyJudgement(type: string, column?: number) {
+	private applyJudgement(type: string) {
 		const colors: any = {
 			PERFECT: 0xffff00,
 			GREAT: 0x00ff00,
 			GOOD: 0x0099ff,
 			MISS: 0xff0000,
 		};
-		this.visuals.showJudgement(type, colors[type], column);
+		this.visuals.showJudgement(type, colors[type]);
 		this.currentScore.addHit(type);
 		this.events.emit("hit");
 	}
