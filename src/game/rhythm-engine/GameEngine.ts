@@ -90,9 +90,13 @@ export class GameEngine {
 		const hitResults = this.hitManager.processInputHits(
 			this.notes,
 			time,
-			(col) => this.inputManager.consumeInput(col),
+			(col) => this.inputManager.consumeInput(col), // Função que consome buffer
 		);
 
+		hitResults.forEach((res) => {
+			this.applyJudgement(res.judge, res.diff, res.note);
+			if (res.type === "MISS") this.currentScore.comboBreak(); // Exemplo
+		});
 		// Passamos a nota para o applyJudgement
 		hitResults.forEach((res) =>
 			this.applyJudgement(res.judge, res.diff, res.note),
@@ -105,8 +109,8 @@ export class GameEngine {
 		this.hitBurst.update(this.notes);
 
 		// 3. Verificação de Misses
-		this.hitManager.checkMisses(this.notes, time, (judge, diff) => {
-			this.applyJudgement(judge, diff); // Miss não passa nota, então não brilha
+		this.hitManager.update(this.notes, time, (res) => {
+			this.applyJudgement(res.judge, res.diff, res.note);
 		});
 	};
 

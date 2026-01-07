@@ -14,16 +14,17 @@ export class InputManager {
 
 	private handleKeyDown = (e: KeyboardEvent) => {
 		const key = e.key.toLowerCase();
+		const keycode = e.code.toLowerCase();
 		// Atalhos de sistema que você definiu na Engine
-		if (key === "dead") return this.events.emit("restart");
-		if (key === "p" || key === "escape") return this.events.emit("pauseToggle");
-		if (key === "[") return this.events.emit("offsetChange", -5);
-		if (key === "]") return this.events.emit("offsetChange", 5);
-		if (key === "f3" || key === "-") {
+		if (keycode === "backquote") return this.events.emit("restart");
+		if (key === "escape") return this.events.emit("pauseToggle");
+		if (key === "+") return this.events.emit("offsetChange", -5);
+		if (key === "=") return this.events.emit("offsetChange", 5);
+		if (key === "f3") {
 			e.preventDefault();
 			return this.events.emit("speedChange", -0.05);
 		}
-		if (key === "f4" || key === "=") {
+		if (key === "f4") {
 			e.preventDefault();
 			return this.events.emit("speedChange", 0.05);
 		}
