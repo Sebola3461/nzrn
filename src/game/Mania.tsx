@@ -52,24 +52,26 @@ export const Game: React.FC = () => {
 
 					const app = new PIXI.Application();
 					await app.init({
+						preference: "webgpu",
 						width: GAME_WIDTH,
 						height: GAME_HEIGHT,
 						antialias: false,
 						resolution: window.devicePixelRatio || 1,
 						backgroundColor: 0x0a0a0c,
+						powerPreference: "high-performance",
 					});
 
 					containerRef.current.appendChild(app.canvas);
 					const engine = new GameEngine(app);
 					await engine.init(mapaData, `/beatmap_assets/${mapa.id}/audio.mp3`);
 
-					app.ticker.minFPS = 999;
-					app.ticker.maxFPS = 999;
+					app.ticker.minFPS = 165;
+					app.ticker.maxFPS = 1000;
 
 					engineRef.current = engine;
 
 					engine.events.on("hit", () => {
-						const s = engine.getScore();
+						const s = engine.currentScore;
 						setScoreData({
 							score: s.score,
 							combo: s.combo,
@@ -245,8 +247,8 @@ export const Game: React.FC = () => {
 								engineRef.current?.clock.setVolume(Number(e.target.value))
 							}
 						/>{" "}
-						/ SV: {engineRef.current?.getScrollSpeed().toFixed(2) || "-"}x /
-						Offset: {engineRef.current?.getOffset() || "-"}
+						/ SV: {engineRef.current?.visuals.scrollSpeed.toFixed(2) || "-"}x /
+						Offset: {engineRef.current?.globalOffset || "-"}
 					</span>
 				</div>
 				<div className="song_details container row">

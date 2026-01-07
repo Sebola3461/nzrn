@@ -6,12 +6,14 @@ import { CONSTANTS, INITIAL_KEYS } from "./Constants";
 import { Score } from "./Score";
 import { VelocityManager } from "./VelocityManager";
 import { InputManager } from "./InputManager";
-import { JudgementManager } from "./JudgementManager";
 import { HitManager } from "./HitManager";
+import { LatencyMonitor } from "./LatencyMonitor";
+import { JudgementManager } from "./JudgementManager";
+import { HitBurstRenderer } from "./UI/HitBurstRenderer";
 
 export class GameEngine {
 	public readonly clock = new AudioClock();
-	private visuals: VisualManager;
+	public readonly visuals: VisualManager;
 	public readonly inputManager: InputManager;
 	private hitManager: HitManager;
 	private notes: HitObject[] = [];
@@ -19,41 +21,41 @@ export class GameEngine {
 	private state: "IDLE" | "PLAYING" | "PAUSED" = "IDLE";
 	private rawMapData: string = "";
 	public currentScore = new Score();
-	private currentSpeed: number = 0.8;
 	public globalOffset: number = 0;
+	private latencyMonitor = new LatencyMonitor();
 	public readonly events = new PIXI.EventEmitter();
+	private hitBurst: HitBurstRenderer;
 
 	constructor(private app: PIXI.Application) {
-		this.visuals = new VisualManager(app.stage, app);
+		// Inicializa o Hub Visual que agora contém os submódulos (NoteRenderer, URBar, etc)
+		this.visuals = new VisualManager(app.stage, app, this.latencyMonitor);
 
 		const savedKeys =
 			localStorage.getItem("keybinds")?.split(",") || INITIAL_KEYS;
 		this.inputManager = new InputManager(CONSTANTS.TOTAL_COLUMNS, savedKeys);
-
-		// Inicializa o gerenciador de hits
 		this.hitManager = new HitManager(CONSTANTS.TOTAL_COLUMNS);
 
 		this.setupInputListeners();
-		this.loadPersistence();
 
 		this.app.ticker.add(this.update, this);
-	}
 
-	public getScore() {
-		return this.currentScore;
+		const savedOffset = localStorage.getItem("globalOffset");
+		if (savedOffset) {
+			this.globalOffset = parseInt(savedOffset);
+		}
+
+		this.hitBurst = new HitBurstRenderer(this.app.stage, this.app);
 	}
 
 	private setupInputListeners() {
+		// Encapsulamos as chamadas visuais no método unificado onKeyPress
 		this.inputManager.events.on("keyDown", (col: number) => {
-			this.visuals.setReceptorState(col, true);
-			this.visuals.showLightning(col);
+			this.visuals.onKeyPress(col, true);
 		});
 
 		this.inputManager.events.on("keyUp", (col: number) => {
-			this.visuals.setReceptorState(col, false);
-			this.visuals.stopLightning(col);
+			this.visuals.onKeyPress(col, false);
 
-			// Delegamos o release para o HitManager
 			const releaseResult = this.hitManager.processRelease(
 				this.notes,
 				col,
@@ -65,6 +67,7 @@ export class GameEngine {
 			}
 		});
 
+		// Listeners de controle permanecem iguais
 		this.inputManager.events.on("restart", () => this.restart());
 		this.inputManager.events.on("pauseToggle", () =>
 			this.state === "PLAYING" ? this.pause() : this.resume(),
@@ -77,82 +80,84 @@ export class GameEngine {
 		);
 	}
 
-	private loadPersistence() {
-		const savedSpeed = localStorage.getItem("scrollSpeed");
-		if (savedSpeed) {
-			this.currentSpeed = parseFloat(savedSpeed);
-			this.visuals.setScrollSpeed(this.currentSpeed);
-		}
-		const savedOffset = localStorage.getItem("globalOffset");
-		if (savedOffset) {
-			this.globalOffset = parseInt(savedOffset);
-		}
-	}
-
-	private getAdjustedTime(): number {
-		return this.clock.getTime() + this.globalOffset;
-	}
-
 	private update = () => {
 		if (this.state !== "PLAYING" || !this.velocityManager) return;
 
 		const time = this.getAdjustedTime();
 		if (isNaN(time)) return;
 
-		// 1. Delegar processamento de hits (KeyDown/Buffer)
+		// 1. Processamento de Hits
 		const hitResults = this.hitManager.processInputHits(
 			this.notes,
 			time,
 			(col) => this.inputManager.consumeInput(col),
 		);
 
-		hitResults.forEach((res) => this.applyJudgement(res.judge, res.diff));
+		// Passamos a nota para o applyJudgement
+		hitResults.forEach((res) =>
+			this.applyJudgement(res.judge, res.diff, res.note),
+		);
 
 		// 2. Renderização
 		this.visuals.render(this.notes, time, this.velocityManager);
 
-		// 3. Delegar verificação de Misses e limpeza de memória
+		// 2.1 Update do Burst (estilo Beatmania)
+		this.hitBurst.update(this.notes);
+
+		// 3. Verificação de Misses
 		this.hitManager.checkMisses(this.notes, time, (judge, diff) => {
-			this.applyJudgement(judge, diff);
+			this.applyJudgement(judge, diff); // Miss não passa nota, então não brilha
 		});
 	};
 
-	private applyJudgement(type: string, errorMs: number) {
+	private applyJudgement(type: string, errorMs: number, note?: HitObject) {
 		const color = JudgementManager.getJudgementColor(type);
 		this.visuals.showJudgement(type, color);
 		this.currentScore.addHit(type);
 
 		if (type !== "MISS") {
 			this.visuals.addURTick(errorMs, color);
+
+			// DISPARO DO BURST
+			if (note) {
+				// Se for HOLD, trigger como LN (brilho contínuo), senão burst comum
+				this.hitBurst.trigger(note.column, note.type === "HOLD");
+			}
 		}
+
 		this.events.emit("hit");
 	}
 
-	// --- GETTERS E SETTERS ---
-	public getOffset() {
-		return this.globalOffset;
-	}
 	public setOffset(ms: number) {
 		this.globalOffset = ms;
 		localStorage.setItem("globalOffset", ms.toString());
 		this.visuals.showJudgement(`OFFSET: ${ms}ms`, 0xffffff, 50);
 	}
 
-	public getScrollSpeed() {
-		return this.currentSpeed;
-	}
 	public changeScrollSpeed(delta: number) {
-		this.currentSpeed = Math.max(0.1, Math.min(4, this.currentSpeed + delta));
-		this.visuals.setScrollSpeed(this.currentSpeed);
-		localStorage.setItem("scrollSpeed", this.currentSpeed.toString());
+		const speed = Math.max(0.1, Math.min(4, this.visuals.scrollSpeed + delta));
+		this.visuals.changeScrollSpeed(speed);
+		localStorage.setItem("scrollSpeed", speed.toString());
+
 		this.visuals.showJudgement(
-			`SPEED: ${this.currentSpeed.toFixed(2)}x`,
+			`SPEED: ${this.visuals.scrollSpeed.toFixed(2)}x`,
 			0xffffff,
 			50,
 		);
 	}
 
 	// --- CONTROLE DE ESTADO ---
+
+	public async init(map: string, audio: string) {
+		this.rawMapData = map;
+		this.notes = MapParser.parse(map);
+		this.velocityManager = new VelocityManager(
+			MapParser.parseTimingPoints(map),
+		);
+		await this.clock.load(audio);
+		this.events.emit("init");
+	}
+
 	public start() {
 		if (this.state === "PAUSED") return this.resume();
 		this.state = "PLAYING";
@@ -178,10 +183,11 @@ export class GameEngine {
 
 	public async restart() {
 		this.state = "IDLE";
+		this.hitBurst.clear();
 		this.clock.fullStop();
 		this.visuals.clearAll();
 		this.currentScore = new Score();
-		this.hitManager.reset(); // Importante resetar os ponteiros
+		this.hitManager.reset();
 
 		this.notes = MapParser.parse(this.rawMapData);
 		this.velocityManager = new VelocityManager(
@@ -192,14 +198,8 @@ export class GameEngine {
 		this.start();
 	}
 
-	public async init(map: string, audio: string) {
-		this.rawMapData = map;
-		this.notes = MapParser.parse(map);
-		this.velocityManager = new VelocityManager(
-			MapParser.parseTimingPoints(map),
-		);
-		await this.clock.load(audio);
-		this.events.emit("init");
+	private getAdjustedTime(): number {
+		return this.clock.getTime() + this.globalOffset;
 	}
 
 	public destroy() {
@@ -208,6 +208,5 @@ export class GameEngine {
 		this.inputManager.destroy();
 		this.events.removeAllListeners();
 		this.visuals.clearAll();
-		this.notes = [];
 	}
 }

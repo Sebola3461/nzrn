@@ -6,6 +6,7 @@ export interface HitObject {
 	hit: boolean;
 	holding: boolean;
 	wasInteracted: boolean;
+	isBroken: boolean; // sb
 }
 
 export interface TimingPoint {
@@ -45,6 +46,7 @@ export class MapParser {
 				hit: false,
 				holding: false,
 				wasInteracted: false,
+				isBroken: false,
 			});
 		}
 		return objects.sort((a, b) => a.time - b.time);
