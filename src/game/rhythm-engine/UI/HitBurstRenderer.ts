@@ -6,7 +6,8 @@ interface ActiveBurst {
 	sprite: PIXI.AnimatedSprite;
 	column: number;
 	isLN: boolean;
-	createdAt: number;
+	life: number; // 1.0 (vivo) até 0.0 (morto)
+	isDying: boolean;
 }
 
 export class HitBurstRenderer {
@@ -41,36 +42,33 @@ export class HitBurstRenderer {
 
 		const colW = this.app.screen.width / CONSTANTS.TOTAL_COLUMNS;
 		const hitY =
-			this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO - 240 / 2 + 20; // math :fire:
+			this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO - 240 / 2 + 30;
 
 		const animatedSprite = new PIXI.AnimatedSprite(this.textures);
 
-		// --- FEELING DO OSU: SCALE & POP ---
-		// Começamos com uma escala levemente maior para o impacto inicial
 		const baseScale = CONSTANTS.BURST_SCALE;
-		animatedSprite.scale.set(baseScale * 1.1);
-
-		// Posicionamento exato (removido o offset fixo que matava a renderização)
+		animatedSprite.scale.set(baseScale * 1.2); // Pop inicial forte
 		animatedSprite.anchor.set(0.5, 0);
 		animatedSprite.x = col * colW + colW / 2;
 		animatedSprite.y = hitY;
-
-		// Visual "Glow" do osu!
 		animatedSprite.blendMode = "add";
-
-		// No osu! mania, o burst é rápido. 1.0 ou mais é ideal.
-		animatedSprite.animationSpeed = 1.2;
+		animatedSprite.animationSpeed = 1.5;
 		animatedSprite.loop = isLN;
+		animatedSprite.alpha = 1.0;
 
 		const burst: ActiveBurst = {
 			sprite: animatedSprite,
 			column: col,
 			isLN: isLN,
-			createdAt: performance.now(),
+			life: 1.0,
+			isDying: false,
 		};
 
+		// Se for TAP, a animação broxa
 		animatedSprite.onComplete = () => {
-			if (!burst.isLN) this.removeBurst(burst);
+			if (!burst.isLN) {
+				burst.isDying = true;
+			}
 		};
 
 		this.container.addChild(animatedSprite);
@@ -87,21 +85,45 @@ export class HitBurstRenderer {
 		);
 
 		this.activeBursts.forEach((burst) => {
+			// 1. Lógica de Long Notes (LN)
 			if (burst.isLN) {
 				if (!holdingCols.has(burst.column)) {
+					// Soltou a LN: vira uma nota normal que vai morrer ao fim da animação
 					burst.isLN = false;
 					burst.sprite.loop = false;
 				} else {
-					// Efeito de vibração contínua enquanto segura (LN do osu!)
+					// Feedback visual de "holding"
 					const pulse =
 						CONSTANTS.BURST_SCALE * (1 + Math.sin(now * 0.4) * 0.05);
 					burst.sprite.scale.set(pulse);
+					burst.sprite.alpha = 0.9 + Math.sin(now * 0.3) * 0.1;
 				}
-			} else {
-				// Suaviza a escala de volta ao normal após o impacto inicial
+			}
+
+			// 2. Lógica de Fade-Out
+			// Se a animação acabou ou se a nota foi solta
+			if (
+				burst.isDying ||
+				(!burst.isLN && burst.sprite.currentFrame >= this.textures.length - 1)
+			) {
+				burst.isDying = true;
+
+				// Reduz o alpha e expande a escala simultaneamente
+				burst.life -= 0.12; // Velocidade do fade (ajuste entre 0.05 e 0.2)
+				burst.sprite.alpha = burst.life;
+
+				// Expansão sutil durante o desaparecimento
+				const expand = 1 + (1 - burst.life) * 0.2;
+				burst.sprite.scale.set(CONSTANTS.BURST_SCALE * expand);
+
+				if (burst.life <= 0) {
+					this.removeBurst(burst);
+				}
+			} else if (!burst.isLN) {
+				// Suaviza o impacto inicial enquanto a animação roda
 				if (burst.sprite.scale.x > CONSTANTS.BURST_SCALE) {
-					burst.sprite.scale.x -= 0.01;
-					burst.sprite.scale.y -= 0.01;
+					burst.sprite.scale.x -= 0.02;
+					burst.sprite.scale.y -= 0.02;
 				}
 			}
 		});
@@ -115,7 +137,9 @@ export class HitBurstRenderer {
 	}
 
 	public clear(): void {
-		this.activeBursts.forEach((burst) => burst.sprite.destroy());
+		this.activeBursts.forEach((burst) => {
+			if (burst.sprite) burst.sprite.destroy();
+		});
 		this.activeBursts.clear();
 		this.container.removeChildren();
 	}
