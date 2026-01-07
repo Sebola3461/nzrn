@@ -15,7 +15,7 @@ export class VisualManager {
 	public readonly playfield: PlayfieldRenderer;
 	public readonly notes: NoteRenderer;
 
-	private _scrollSpeed = 0.8;
+	private _scrollSpeed = 1;
 
 	public get scrollSpeed() {
 		return this._scrollSpeed;
