@@ -86,31 +86,32 @@ export class GameEngine {
 		const time = this.getAdjustedTime();
 		if (isNaN(time)) return;
 
-		// 1. Processamento de Hits
+		// 1. Processamento de Hits (Lógica de PRESS)
+		// Passamos duas funções: uma apenas para checar e outra para confirmar o acerto
 		const hitResults = this.hitManager.processInputHits(
 			this.notes,
 			time,
-			(col) => this.inputManager.consumeInput(col), // Função que consome buffer
+			(col) => this.inputManager.hasPendingHit(col), // Checa se houve um keydown
+			(col) => this.inputManager.consumeInput(col), // Só limpa se a nota for validada
 		);
 
+		// Processa os resultados do clique inicial
 		hitResults.forEach((res) => {
 			this.applyJudgement(res.judge, res.diff, res.note);
-			if (res.type === "MISS") this.currentScore.comboBreak(); // Exemplo
+			if (res.type === "MISS") this.currentScore.comboBreak();
 		});
-		// Passamos a nota para o applyJudgement
-		hitResults.forEach((res) =>
-			this.applyJudgement(res.judge, res.diff, res.note),
-		);
 
-		// 2. Renderização
+		// 2. Renderização Visual
 		this.visuals.render(this.notes, time, this.velocityManager);
 
-		// 2.1 Update do Burst (estilo Beatmania)
+		// 2.1 Update dos efeitos de explosão (Hit Burst)
 		this.hitBurst.update(this.notes);
 
-		// 3. Verificação de Misses
+		// 3. Verificação de Misses (Notas que passaram direto)
+		// Também lida com o "Auto-Release" de Long Notes
 		this.hitManager.update(this.notes, time, (res) => {
 			this.applyJudgement(res.judge, res.diff, res.note);
+			if (res.type === "MISS") this.currentScore.comboBreak();
 		});
 	};
 

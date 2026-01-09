@@ -18,66 +18,82 @@ export class HitManager {
 
 	/**
 	 * Processa o input de PRESSIONAR tecla (Down).
+	 * @param hasInput Função que apenas checa se existe um clique no buffer.
+	 * @param consumeInput Função que efetivamente limpa o buffer de clique.
 	 */
 	public processInputHits(
 		notes: HitObject[],
 		time: number,
-		consumeInput: (col: number) => boolean,
+		hasInput: (col: number) => boolean,
+		consumeInput: (col: number) => void,
 	): HitResult[] {
 		const results: HitResult[] = [];
 
 		for (let col = 0; col < this.totalColumns; col++) {
-			if (!consumeInput(col)) continue;
+			// 1. Verificamos se há um clique pendente nesta coluna
+			if (!hasInput(col)) continue;
 
 			const startIndex = this.nextNoteIndex[col];
 			let targetNote: HitObject | null = null;
 
-			// Otimização: check nas próximas 10 notas
+			// Otimização: busca proximas 50 notas da coluna (isso é util pra qnd o mapa tem mt nota)
 			for (
 				let i = startIndex;
-				i < Math.min(startIndex + 10, notes.length);
+				i < Math.min(startIndex + 50, notes.length);
 				i++
 			) {
 				const n = notes[i];
-				if (n.column !== col) continue;
+				if (n.column !== col || n.hit || n.wasInteracted) continue;
 
-				// CRUCIAL: Pula se já foi hitada OU se já foi processada como Miss
-				if (n.hit || n.wasInteracted) continue;
+				const diff = n.time - time; // Positivo = adiantado, Negativo = atrasado
 
-				// Stop condition: Nota muito no futuro
-				if (n.time > time + CONSTANTS.JUDGEMENT_WINDOWS.MISS) break;
+				// --- LÓGICA ESTILO OSU!viadomania ---
 
-				const diff = n.time - time;
+				// CASO A: Nota está dentro da janela de acerto (Hit)
 				if (Math.abs(diff) <= CONSTANTS.JUDGEMENT_WINDOWS.MISS) {
 					targetNote = n;
 					break;
 				}
+
+				// CASO B: O clique foi muito adiantado (Antes da janela de MISS)
+				if (diff > CONSTANTS.JUDGEMENT_WINDOWS.MISS) {
+					// Não fazemos nada e não chamamos consumeInput().
+					// O clique "fica vivo" no buffer para o próximo frame.
+					// isso aqui pode bugar, e com ctz vai kkkkkkk
+					break;
+				}
 			}
 
+			// 2. Se encontramos uma nota na janela, aí sim processamos e CONSUMIMOS o clique
 			if (targetNote) {
-				const diff = time - targetNote.time;
-				const judge = JudgementManager.getJudgement(Math.abs(diff));
+				consumeInput(col); // Agora o buffer de clique é zerado
 
-				targetNote.wasInteracted = true; // Marcamos que interagimos
+				const errorMs = time - targetNote.time;
+				const judge = JudgementManager.getJudgement(Math.abs(errorMs));
+
+				targetNote.wasInteracted = true;
 
 				if (targetNote.type === "TAP") {
-					// AQUI SIM: O jogador acertou
 					targetNote.hit = true;
 				} else {
-					// Lógica de LN Head
+					// Lógica de Head de Long Note (LN)
 					if (judge !== "MISS") {
 						targetNote.holding = true;
 						targetNote.isBroken = false;
-						targetNote.hit = true; // Head acertada
+						targetNote.hit = true;
 					} else {
-						// Miss no head = LN quebrada
 						targetNote.isBroken = true;
-						targetNote.hit = false; // NÃO foi hitada, foi um erro
+						targetNote.hit = false;
 						targetNote.holding = false;
 					}
 				}
 
-				results.push({ note: targetNote, judge, diff, type: "HIT" });
+				results.push({
+					note: targetNote,
+					judge,
+					diff: errorMs,
+					type: "HIT",
+				});
 			}
 		}
 
