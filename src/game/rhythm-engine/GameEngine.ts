@@ -27,7 +27,9 @@ export class GameEngine {
 	private hitBurst: HitBurstRenderer;
 
 	// --- Propriedades de Lógica de Alta Performance ---
-	private targetLogicFPS: number = 1000;
+	private targetLogicFPS: number = localStorage["maxLogicFPS"]
+		? parseInt(localStorage["maxLogicFPS"])
+		: 1250;
 	private isRunning: boolean = false;
 	private logicChannel = new MessageChannel();
 	private lastTickTime = performance.now();
@@ -41,6 +43,10 @@ export class GameEngine {
 			localStorage.getItem("keybinds")?.split(",") || INITIAL_KEYS;
 		const savedVolume = parseFloat(localStorage.getItem("volume") || "0.2");
 		const savedOffset = localStorage.getItem("globalOffset");
+
+		if (!localStorage["maxLogicFPS"]) {
+			localStorage["maxLogicFPS"] = "1250";
+		}
 
 		this.inputManager = new InputManager(CONSTANTS.TOTAL_COLUMNS, savedKeys);
 		this.hitManager = new HitManager(CONSTANTS.TOTAL_COLUMNS);
@@ -60,6 +66,15 @@ export class GameEngine {
 		// 2. Inicia o loop de lógica ultra-rápido
 		this.isRunning = true;
 		this.scheduleLogicTick();
+	}
+
+	public getMaxLogicFPS() {
+		return this.targetLogicFPS;
+	}
+
+	public setMaxLogicFPS(fps: number) {
+		this.targetLogicFPS = fps;
+		localStorage["maxLogicFPS"] = String(Math.round(fps));
 	}
 
 	private setupInputListeners() {

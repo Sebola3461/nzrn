@@ -32,6 +32,9 @@ export const Game: React.FC = () => {
 	const engineRef = useRef<GameEngine | null>(null);
 	const [scoreData, setScoreData] = useState(defaultScoreData);
 	const [selectedMap, setSelectedMap] = useState(-1);
+	const [maxLogicFPS, setMaxLogicFPS] = useState(
+		localStorage["maxLogicFPS"] ? Number(localStorage["maxLogicFPS"]) : 1250,
+	);
 	const [isGameRunning, setIsGameRunning] = useState(false);
 	const [isPaused, setPaused] = useState(false);
 	const [currentChangingBinds, setCurrentChangingBinds] = useState(-1);
@@ -275,6 +278,23 @@ export const Game: React.FC = () => {
 							engineRef.current?.changeShouldRenderTail(
 								c.currentTarget.checked,
 							);
+						}}
+					/>
+				</div>
+				<div className="song_details container row">
+					<span className="text">Max LGC FPS ({maxLogicFPS}):</span>
+					<input
+						type="range"
+						defaultValue={maxLogicFPS}
+						step={50}
+						min={100}
+						max={2250}
+						onInput={(c) => {
+							engineRef.current?.setMaxLogicFPS(
+								c.currentTarget.valueAsNumber || 1250,
+							);
+
+							setMaxLogicFPS(c.currentTarget.valueAsNumber || 1250);
 						}}
 					/>
 				</div>
