@@ -16,7 +16,13 @@ export interface TimingPoint {
 }
 
 export class MapParser {
-	static parse(content: string, keyCount: number = 4): HitObject[] {
+	static parse(
+		content: string,
+		keyCount: number = 4,
+		offset: number,
+	): HitObject[] {
+		offset = Math.round(offset);
+
 		const objects: HitObject[] = [];
 		const lines = content.split("\n");
 		let isSection = false;
@@ -29,10 +35,13 @@ export class MapParser {
 			if (line.startsWith("[") && isSection) break;
 			if (!isSection || line.trim() === "") continue;
 
-			const [x, , time, type, , endParams] = line.split(",");
+			let [x, , time, type, , endParams] = line.split(",");
+			time = String(Number(time) + offset);
+
 			const column = Math.floor((parseInt(x) * keyCount) / 512);
 			const isHold = (parseInt(type) & 128) > 0;
 			let endTime = parseInt(time);
+			endTime += offset;
 
 			if (isHold && endParams) {
 				endTime = parseInt(endParams.split(":")[0]);
@@ -52,7 +61,7 @@ export class MapParser {
 		return objects.sort((a, b) => a.time - b.time);
 	}
 
-	static parseTimingPoints(content: string): TimingPoint[] {
+	static parseTimingPoints(content: string, offset: number): TimingPoint[] {
 		const points: TimingPoint[] = [];
 		const lines = content.split("\n");
 		let isSection = false;
@@ -65,8 +74,9 @@ export class MapParser {
 			if (line.startsWith("[") && isSection) break;
 			if (!isSection || !line.trim()) continue;
 
-			const [time, beatLength, , , , , uninherited] = line.split(",");
+			let [time, beatLength, , , , , uninherited] = line.split(",");
 			let multiplier = 1.0;
+			time = String(Number(time) + offset);
 
 			// No osu!, se uninherited for 0, beatLength é um valor negativo que define o SV
 			// Exemplo: -100 significa 1.0x, -50 significa 2.0x

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { CONSTANTS } from "../Constants";
+import { NoteRenderer } from "./NoteRenderer";
 
 export class PlayfieldRenderer {
 	private container = new PIXI.Container();
@@ -37,19 +38,28 @@ export class PlayfieldRenderer {
 		const padding = this.columnWidth * 0.1;
 		const w = this.columnWidth - padding * 2;
 		if (active) {
-			g.rect(-2, -2, w + 4, 34).fill({ color: 0xc3c3c3, alpha: 0.15 });
-			g.rect(0, 0, w, 30)
+			g.rect(-2, -2, w + 4, NoteRenderer.NOTE_HEIGHT).fill({
+				color: 0xc3c3c3,
+				alpha: 0.15,
+			});
+			g.rect(0, 0, w, NoteRenderer.NOTE_HEIGHT)
 				.stroke({ color: 0xc3c3c3, width: 3 })
 				.fill({ color: 0xc3c3c3, alpha: 0.3 });
 		} else {
-			g.rect(0, 0, w, 30).stroke({ color: 0x333344, width: 2, alpha: 0.5 });
+			g.rect(0, 0, w, NoteRenderer.NOTE_HEIGHT).stroke({
+				color: 0x333344,
+				width: 2,
+				alpha: 0.5,
+			});
 		}
 		g.x = col * this.columnWidth + padding;
 	}
 
 	public setLightning(col: number, active: boolean) {
 		if (active && !this.lightnings.has(col)) {
-			const hitY = this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO;
+			const hitY =
+				this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO -
+				NoteRenderer.NOTE_HEIGHT / 2;
 			const color = ["#299ba5", "#fd96e7", "#fd96e7", "#299ba5"][col];
 			const l = new PIXI.Graphics()
 				.rect(col * this.columnWidth, 15, this.columnWidth, hitY)
@@ -71,7 +81,7 @@ export class PlayfieldRenderer {
 	}
 
 	private drawHitLine() {
-		const hitY = this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO + 15;
+		const hitY = this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO;
 		this.hitLine
 			.rect(0, hitY, this.app.screen.width, 2)
 			.fill({ color: 0xffffff, alpha: 0.8 });

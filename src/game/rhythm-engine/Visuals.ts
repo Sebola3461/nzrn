@@ -44,34 +44,40 @@ export class VisualManager {
 		this._scrollSpeed = speed;
 	}
 
+	/**
+	 * Renderização principal das notas (Loop de Vídeo)
+	 */
 	public render(hitObjects: HitObject[], time: number, ve: VelocityManager) {
 		this.notes.render(hitObjects, time, ve, this._scrollSpeed);
-		this.judge.update();
-		this.ur.update();
-		this.perf.update();
 	}
 
-	public showJudgement(txt: string, col: number, offsetY?: number) {
-		this.judge.show(txt, col, offsetY);
+	/**
+	 * Atualiza os elementos de interface e animações (Loop de Vídeo)
+	 * Chamado pela GameEngine para atualizar URBar, Performance e Judgements
+	 */
+	public updateSubsystems() {
+		this.judge.update(); // Fade out do texto de Perfect/Great
+		this.ur.update(); // Fade out dos tracinhos e movimento da média
+		this.perf.update(); // Atualiza FPS e Latência na tela
 	}
+
+	public showJudgement(txt: string) {
+		this.judge.show(txt);
+	}
+
 	public addURTick(ms: number, col: number) {
 		this.ur.addTick(ms, col);
 	}
+
 	public onKeyPress(col: number, down: boolean) {
 		this.playfield.setLightning(col, down);
 		this.playfield.drawReceptor(this.playfield["receptors"][col], col, down);
 	}
+
 	public clearAll(): void {
-		// Limpa as notas e sprites em cache
 		this.notes.clear();
-
-		// Limpa os textos de julgamento (PERFECT, GREAT) que ainda estão na tela
 		this.judge.clear();
-
-		// Reseta os efeitos de luz e estado dos receptores
 		this.playfield.reset();
-
-		// Opcional: Limpa a barra de UR se quiser que ela comece do zero no restart
 		this.ur.clear();
 	}
 }

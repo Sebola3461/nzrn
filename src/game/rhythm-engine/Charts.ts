@@ -39,4 +39,20 @@ export const Charts = [
 		notes: 1106,
 		longs: 207,
 	},
+	{
+		id: "noburesu",
+		title: "Non-breath oblige",
+		artist: "PinocchioP feat. Hatsune Miku",
+		duration: "3:23",
+		notes: 745,
+		longs: 1355,
+	},
+	{
+		id: "freedomdive",
+		title: "FREEDOM DiVE↓",
+		artist: "xi",
+		duration: "4:21",
+		notes: 2990,
+		longs: 34,
+	},
 ];

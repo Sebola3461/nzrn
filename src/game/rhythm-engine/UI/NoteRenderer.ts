@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import { HitObject } from "../MapParser";
 import { VelocityManager } from "../VelocityManager";
 import { CONSTANTS } from "../Constants";
+import { GameEngine } from "../GameEngine";
 
 export class NoteRenderer {
 	private container = new PIXI.Container();
@@ -10,6 +11,7 @@ export class NoteRenderer {
 
 	private shineFilter = new PIXI.ColorMatrixFilter();
 	private darkFilter = new PIXI.ColorMatrixFilter();
+	public static readonly NOTE_HEIGHT = 40;
 
 	constructor(private stage: PIXI.Container, private app: PIXI.Application) {
 		this.stage.addChild(this.container);
@@ -24,7 +26,7 @@ export class NoteRenderer {
 		ve: VelocityManager,
 		scrollSpeed: number,
 	) {
-		const hitY = this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO;
+		const hitY = this.app.screen.height * CONSTANTS.HIT_POSITION_RATIO; // ISSO AQUI DEFINE ONDE VAI SER O JUDGEMENT
 		const playerPos = ve.getPositionAtTime(currentTime);
 		const colW = this.app.screen.width / CONSTANTS.TOTAL_COLUMNS;
 		const screenHeight = this.app.screen.height;
@@ -98,7 +100,12 @@ export class NoteRenderer {
 		g.x = note.column * colW + padding;
 
 		if (note.type === "TAP") {
-			g.rect(0, -15, w, 30).fill(baseColor);
+			g.rect(
+				0,
+				-(NoteRenderer.NOTE_HEIGHT / 2),
+				w,
+				NoteRenderer.NOTE_HEIGHT,
+			).fill(baseColor);
 			g.y = y;
 		} else {
 			// === LÓGICA DE SNAP FIXO ===
@@ -122,10 +129,24 @@ export class NoteRenderer {
 				});
 
 				// Cabeça (Só desenha se não estiver "dentro" do receptor ou se soltou)
-				g.rect(0, bodyH - 15, w, 30).fill({ color: baseColor, alpha: 1.0 });
+				g.rect(
+					0,
+					bodyH - NoteRenderer.NOTE_HEIGHT / 2,
+					w,
+					NoteRenderer.NOTE_HEIGHT,
+				).fill({
+					color: baseColor,
+					alpha: 1.0,
+				});
 
 				// Cauda
-				g.rect(0, -15, w, 30).fill({ color: baseColor, alpha: 1.0 });
+				if (GameEngine.SHOULD_RENDER_TAIL)
+					g.rect(
+						0,
+						-(NoteRenderer.NOTE_HEIGHT / 2),
+						w,
+						NoteRenderer.NOTE_HEIGHT,
+					).fill({ color: baseColor, alpha: 1.0 });
 
 				g.y = yEnd;
 			} else {

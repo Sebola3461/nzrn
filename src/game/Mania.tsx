@@ -12,6 +12,7 @@ const defaultScoreData = {
 	rank: "SS",
 	acc: "100",
 	hits: {
+		MARAVELOUS: 0,
 		PERFECT: 0,
 		GREAT: 0,
 		GOOD: 0,
@@ -36,7 +37,7 @@ export const Game: React.FC = () => {
 	const [currentChangingBinds, setCurrentChangingBinds] = useState(-1);
 
 	// Suas medidas exatas
-	const GAME_WIDTH = 280 * 1.2; // 336px
+	const GAME_WIDTH = 280 * 1.4; // 336px
 	const GAME_HEIGHT = window.innerHeight * 0.9; // 840px
 
 	const startGame = (mapa: (typeof Charts)[0]) => {
@@ -225,8 +226,9 @@ export const Game: React.FC = () => {
 				</div>
 				<div className="song_details container">
 					<span className="text">
-						Perfect: {scoreData.hits.PERFECT} / Great: {scoreData.hits.GREAT} /
-						Good: {scoreData.hits.GOOD} / Miss: {scoreData.hits.MISS}
+						Marv: {scoreData.hits.MARAVELOUS} / Perfect:{" "}
+						{scoreData.hits.PERFECT} / Good: {scoreData.hits.GOOD} / Great:{" "}
+						{scoreData.hits.GREAT} / Miss: {scoreData.hits.MISS}
 					</span>
 				</div>
 				<div className="song_details container">
@@ -242,10 +244,11 @@ export const Game: React.FC = () => {
 							min={0}
 							max={1}
 							step={0.01}
-							defaultValue={0.01}
-							onChange={(e) =>
-								engineRef.current?.clock.setVolume(Number(e.target.value))
-							}
+							defaultValue={localStorage["volume"] || 0.25}
+							onChange={(e) => {
+								engineRef.current?.clock.setVolume(Number(e.target.value));
+								localStorage["volume"] = e.target.valueAsNumber;
+							}}
 						/>{" "}
 						/ SV: {engineRef.current?.visuals.scrollSpeed.toFixed(2) || "-"}x /
 						Offset: {engineRef.current?.globalOffset || "-"}
@@ -262,6 +265,18 @@ export const Game: React.FC = () => {
 							<span className="text big">{key}</span>
 						</div>
 					))}
+				</div>
+				<div className="song_details container row">
+					<span className="text">Should Render LN tail:</span>{" "}
+					<input
+						type="checkbox"
+						defaultChecked={localStorage["renderTail"] == "1"}
+						onInput={(c) => {
+							engineRef.current?.changeShouldRenderTail(
+								c.currentTarget.checked,
+							);
+						}}
+					/>
 				</div>
 			</div>
 		</div>

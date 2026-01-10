@@ -17,86 +17,85 @@ export class HitManager {
 	}
 
 	/**
-	 * Processa o input de PRESSIONAR tecla (Down).
-	 * @param hasInput Função que apenas checa se existe um clique no buffer.
-	 * @param consumeInput Função que efetivamente limpa o buffer de clique.
+	 * Processa os inputs de PRESSIONAR.
+	 * @param gameTime O tempo atual da música (audioTime).
+	 * @param consumeInput Função que retorna o timestamp do input (number) ou null.
 	 */
 	public processInputHits(
 		notes: HitObject[],
-		time: number,
-		hasInput: (col: number) => boolean,
-		consumeInput: (col: number) => void,
+		gameTime: number,
+		consumeInput: (col: number) => number | null,
 	): HitResult[] {
 		const results: HitResult[] = [];
 
 		for (let col = 0; col < this.totalColumns; col++) {
-			// 1. Verificamos se há um clique pendente nesta coluna
-			if (!hasInput(col)) continue;
+			// Usamos um loop 'while' para consumir todos os inputs da fila daquela coluna.
+			// Isso é vital para "Jacks" (notas repetidas rápidas) no mesmo frame.
+			let inputTimestamp: number | null;
 
-			const startIndex = this.nextNoteIndex[col];
-			let targetNote: HitObject | null = null;
+			while ((inputTimestamp = consumeInput(col)) !== null) {
+				const startIndex = this.nextNoteIndex[col];
+				let targetNote: HitObject | null = null;
 
-			// Otimização: busca proximas 50 notas da coluna (isso é util pra qnd o mapa tem mt nota)
-			for (
-				let i = startIndex;
-				i < Math.min(startIndex + 50, notes.length);
-				i++
-			) {
-				const n = notes[i];
-				if (n.column !== col || n.hit || n.wasInteracted) continue;
+				// 1. Calcular o tempo "real" do hit em relação à música
+				// Compensamos a diferença entre quando o evento ocorreu e o frame atual
+				const frameLatency = performance.now() - inputTimestamp;
+				const correctedHitTime = gameTime - frameLatency;
 
-				const diff = n.time - time; // Positivo = adiantado, Negativo = atrasado
+				for (
+					let i = startIndex;
+					i < Math.min(startIndex + 50, notes.length);
+					i++
+				) {
+					const n = notes[i];
+					if (n.column !== col || n.hit || n.wasInteracted) continue;
 
-				// --- LÓGICA ESTILO OSU!viadomania ---
+					// Usamos o correctedHitTime para a comparação de distância
+					const diff = n.time - correctedHitTime;
 
-				// CASO A: Nota está dentro da janela de acerto (Hit)
-				if (Math.abs(diff) <= CONSTANTS.JUDGEMENT_WINDOWS.MISS) {
-					targetNote = n;
-					break;
+					// Se a nota está na janela de acerto
+					if (Math.abs(diff) <= CONSTANTS.JUDGEMENT_WINDOWS.MISS) {
+						targetNote = n;
+						break;
+					}
+
+					// Se a nota mais antiga da coluna ainda está muito longe no futuro,
+					// paramos a busca para este clique específico.
+					if (diff > CONSTANTS.JUDGEMENT_WINDOWS.MISS) break;
 				}
 
-				// CASO B: O clique foi muito adiantado (Antes da janela de MISS)
-				if (diff > CONSTANTS.JUDGEMENT_WINDOWS.MISS) {
-					// Não fazemos nada e não chamamos consumeInput().
-					// O clique "fica vivo" no buffer para o próximo frame.
-					// isso aqui pode bugar, e com ctz vai kkkkkkk
-					break;
-				}
-			}
+				if (targetNote) {
+					// Cálculo de erro baseado no tempo corrigido (mais preciso)
+					const errorMs = correctedHitTime - targetNote.time;
+					const judge = JudgementManager.getJudgement(
+						Math.abs(errorMs),
+						targetNote,
+						false,
+					);
 
-			// 2. Se encontramos uma nota na janela, aí sim processamos e CONSUMIMOS o clique
-			if (targetNote) {
-				consumeInput(col); // Agora o buffer de clique é zerado
+					targetNote.wasInteracted = true;
 
-				const errorMs = time - targetNote.time;
-				const judge = JudgementManager.getJudgement(Math.abs(errorMs));
-
-				targetNote.wasInteracted = true;
-
-				if (targetNote.type === "TAP") {
-					targetNote.hit = true;
-				} else {
-					// Lógica de Head de Long Note (LN)
-					if (judge !== "MISS") {
-						targetNote.holding = true;
-						targetNote.isBroken = false;
+					if (targetNote.type === "TAP") {
 						targetNote.hit = true;
 					} else {
-						targetNote.isBroken = true;
-						targetNote.hit = false;
-						targetNote.holding = false;
+						if (judge !== "MISS") {
+							targetNote.holding = true;
+							targetNote.hit = true;
+						} else {
+							targetNote.isBroken = true;
+							targetNote.hit = false;
+						}
 					}
-				}
 
-				results.push({
-					note: targetNote,
-					judge,
-					diff: errorMs,
-					type: "HIT",
-				});
+					results.push({
+						note: targetNote,
+						judge,
+						diff: errorMs,
+						type: "HIT",
+					});
+				}
 			}
 		}
-
 		return results;
 	}
 
@@ -126,7 +125,7 @@ export class HitManager {
 			// Release válido (mesmo que seja Poor/Good)
 			return {
 				note,
-				judge: JudgementManager.getJudgement(absDiff),
+				judge: JudgementManager.getJudgement(absDiff, note, true),
 				diff: releaseDiff,
 				type: "RELEASE",
 			};
