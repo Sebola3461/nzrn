@@ -175,7 +175,7 @@ export class HitManager {
 						// Apenas emitimos o evento de sucesso no release.
 						onJudgement({
 							note: n,
-							judge: "PERFECT",
+							judge: "GOOD",
 							diff: 0,
 							type: "RELEASE",
 						});
